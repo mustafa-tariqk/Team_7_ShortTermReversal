@@ -1,16 +1,22 @@
-class JumpingBlackCamel(QCAlgorithm):
+class Team7Algo(QCAlgorithm):
 
     def Initialize(self):
-        self.SetStartDate(2021, 5, 9)  # Set Start Date
-        self.SetCash(100000)  # Set Strategy Cash
-        # self.AddEquity("SPY", Resolution.Minute)
+        pass
 
+    def OnSecuritiesChanged(self, changes):
+        pass
+        
+    def CoarseSelectionFunction(self, coarse):
+        pass
 
+    def FineSelectionFunction(self, fine):
+        pass
+    
     def OnData(self, data):
-        '''OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.
-            Arguments:
-                data: Slice object keyed by symbol containing the stock data
-        '''
-
-        # if not self.Portfolio.Invested:
-        #    self.SetHoldings("SPY", 1)
+        pass
+                
+    def Selection(self):
+        pass
+            
+class SymbolData():
+    pass
