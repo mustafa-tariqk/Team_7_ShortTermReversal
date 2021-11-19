@@ -6,10 +6,10 @@ class Team7Algo(QCAlgorithm):
     def OnSecuritiesChanged(self, changes):
         pass
         
-    def CoarseSelectionFunction(self, coarse):
+    def CoarseSelection(self, coarse):
         pass
 
-    def FineSelectionFunction(self, fine):
+    def FineSelection(self, fine):
         pass
     
     def OnData(self, data):
