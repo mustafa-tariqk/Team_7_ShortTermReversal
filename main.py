@@ -1,3 +1,6 @@
+from typing_extensions import TypeGuard
+
+
 class Team7Algo(QCAlgorithm):
 
     def Initialize(self):
@@ -53,6 +56,26 @@ class Team7Algo(QCAlgorithm):
 
         return [x for x in selected if self.data[x].is_ready()]
 
+    def FineSelect(self, fine):
+        
+        fine = [x for x in fine if x.MarketCap!=0]
+        sorted_by_market_cap = sorted(fine, key = lambda x:x.MarketCap, reverse = True)
+        topByMarketcap = [x.Symbol for x in sorted_by_market_cap [:self.top_by_market_cap_count]]
+        monthPerformance = {symbol:self.data[symbol].monthly_return() for symbol in topByMarketcap}
+        weekPerformance = {symbol:self.data[symbol].weekly_return() for symbol in topByMarketcap}
+        sortedmonthPerformance = [x[0] for x in sorted(monthPerformance.items(), key= lambda item: item[1], reverse=True)]
+        sortedWeekPerformance = [x[0] for x in sorted(weekPerformance.items(), key= lambda item: item[1])]
+        self.long = sortedWeekPerformance[:self.stock_selection]
+        for symbol in sortedmonthPerformance:
+            if symbol not in self.long:
+                self.short.append(symbol)
+            if len(self.short)==10:
+                break
+        return self.long + self.short
+
+
+        pass
+
     def FineSelection(self, fine):
         pass
     
@@ -89,6 +112,7 @@ class Team7Algo(QCAlgorithm):
         self.day += 1
         if self.day > 5:
             self.day = 1
+    
             
 class SymbolData():
     def __init__(self, period):
@@ -106,3 +130,5 @@ class SymbolData():
 
     def monthly_return(self):
         return self.closes[0] / self.closes[self.period] -1
+
+
