@@ -2,7 +2,7 @@ class Team7Algo(QCAlgorithm):
 
     def Initialize(self):
         self.SetStartDate(2000, 1, 1)  
-        self.SetCash(100)
+        self.SetCash(100000)
 
         self.symbol = self.AddEquity('SPY', Resolution.Daily).Symbol
         
