@@ -69,7 +69,7 @@ class Team7Algo(QCAlgorithm):
             
 class SymbolData():
     def __init__(self, period):
-        self.closes = RollingWindow[float](13)
+        self.closes = RollingWindow[float](self.period)
         self.period = period
     
     def update(self, close):
