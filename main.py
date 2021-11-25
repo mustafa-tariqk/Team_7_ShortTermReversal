@@ -60,7 +60,23 @@ class Team7Algo(QCAlgorithm):
         pass
                 
     def Selection(self):
-        pass
+        self.Schedule.On(self.DateRules.WeekStart(), self.TimeRules.At(12, 0), self.day = 0)
+        if self.day == 4:
+            self.selection_flag = True
             
 class SymbolData():
-    pass
+    def __init__(self, period):
+        self.closes = RollingWindow[float](13)
+        self.period = period
+    
+    def update(self, close):
+        self.closes.Add(close)
+
+    def is_ready(self):
+        return self.closes.IsReady
+
+    def weekly_return(self):
+        return self.closes[0] / self.closes[4] -1
+
+    def monthly_return(self):
+        return self.closes[0] / self.closes[self.period] -1
