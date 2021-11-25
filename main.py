@@ -23,9 +23,6 @@ class Team7Algo(QCAlgorithm):
         self.UniverseSettings.Resolution = Resolution.Daily
         self.AddUniverse(self.CoarseSelectionFunction, self.FineSelectionFunction)
         self.Schedule.On(self.DateRules.EveryDay(self.symbol), self.TimeRules.AfterMarketOpen(self.symbol), self.Selection)
-
-    def OnSecuritiesChanged(self, changes):
-        pass
         
     def CoarseSelectionFunction(self, coarse):
         for stock in coarse:
