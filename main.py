@@ -1,7 +1,28 @@
 class Team7Algo(QCAlgorithm):
 
     def Initialize(self):
-        pass
+        self.SetStartDate(2000, 1, 1)  
+        self.SetCash(100)
+
+        self.symbol = self.AddEquity('SPY', Resolution.Daily).Symbol
+        
+        self.coarse_count = 500
+        self.stock_selection = 10
+        self.top_by_market_cap_count = 100
+        
+        self.period = 21
+        
+        self.long = []
+        self.short = []
+        
+        # Daily close data
+        self.data = {}
+        
+        self.day = 1
+        self.selection_flag = False
+        self.UniverseSettings.Resolution = Resolution.Daily
+        self.AddUniverse(self.CoarseSelectionFunction, self.FineSelectionFunction)
+        self.Schedule.On(self.DateRules.EveryDay(self.symbol), self.TimeRules.AfterMarketOpen(self.symbol), self.Selection)
 
     def OnSecuritiesChanged(self, changes):
         pass
