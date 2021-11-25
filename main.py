@@ -56,8 +56,31 @@ class Team7Algo(QCAlgorithm):
     def FineSelection(self, fine):
         pass
     
-    def OnData(self, data):
-        pass
+    def OnData(self,data):
+  if !self.selection_flag:
+    return
+  self.selection_flag = False
+
+  invested = []
+
+  for x in self.Portfolio:
+    if x.Value.Invested:
+      invested.append(x.Key)
+
+  for symbol in invested:
+    if symbol not in self.short + self.long:
+      self.Liquidate(symbol)
+  
+  for symbol in self.short:
+    if self.Securities[symbol].Price != 0 and self.Securities[symbol].IsTradeable:
+      self.setHoldings(symbol, -1/len(self.short))
+
+  for symbol in self.long:
+    if self.Securities[symbol].Price != 0 and self.Securities[symbol].IsTradeable:
+      self.setHoldings(symbol, 1/len(self.long))
+
+  self.short.clear()
+  self.long.clear()
                 
     def Selection(self):
         if self.day == 5:
