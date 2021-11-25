@@ -60,9 +60,12 @@ class Team7Algo(QCAlgorithm):
         pass
                 
     def Selection(self):
-        self.Schedule.On(self.DateRules.WeekStart(), self.TimeRules.At(12, 0), self.day = 0)
-        if self.day == 4:
+        if self.day == 5:
             self.selection_flag = True
+        
+        self.day += 1
+        if self.day > 5:
+            self.day = 1
             
 class SymbolData():
     def __init__(self, period):
