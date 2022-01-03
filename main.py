@@ -1,6 +1,3 @@
-from typing_extensions import TypeGuard
-
-
 class Team7Algo(QCAlgorithm):
 
     def Initialize(self):
@@ -59,36 +56,34 @@ class Team7Algo(QCAlgorithm):
     def FineSelect(self, fine):
         
         fine = [x for x in fine if x.MarketCap!=0]
+
         sorted_by_market_cap = sorted(fine, key = lambda x:x.MarketCap, reverse = True)
         topByMarketcap = [x.Symbol for x in sorted_by_market_cap [:self.top_by_market_cap_count]]
+        
         monthPerformance = {symbol:self.data[symbol].monthly_return() for symbol in topByMarketcap}
         weekPerformance = {symbol:self.data[symbol].weekly_return() for symbol in topByMarketcap}
+        
         sortedmonthPerformance = [x[0] for x in sorted(monthPerformance.items(), key= lambda item: item[1], reverse=True)]
         sortedWeekPerformance = [x[0] for x in sorted(weekPerformance.items(), key= lambda item: item[1])]
+        
         self.long = sortedWeekPerformance[:self.stock_selection]
+        
         for symbol in sortedmonthPerformance:
             if symbol not in self.long:
                 self.short.append(symbol)
+
             if len(self.short)==10:
                 break
+
         return self.long + self.short
 
-
-        pass
-
-    def FineSelection(self, fine):
-        pass
     
     def OnData(self, data):
         if not self.selection_flag:
             return
         self.selection_flag = False
 
-        invested = []
-
-        for x in self.Portfolio:
-            if x.Value.Invested:
-                invested.append(x.Key)
+        invested = [x.Key for x in self.Portfolio if x.Value.Invested]
 
         for symbol in invested:
             if symbol not in self.short + self.long:
@@ -116,7 +111,7 @@ class Team7Algo(QCAlgorithm):
             
 class SymbolData():
     def __init__(self, period):
-        self.closes = RollingWindow[float](self.period)
+        self.closes = RollingWindow[float](period)
         self.period = period
     
     def update(self, close):
@@ -126,7 +121,7 @@ class SymbolData():
         return self.closes.IsReady
 
     def weekly_return(self):
-        return self.closes[0] / self.closes[4] -1
+        return self.closes[0] / self.closes[5] -1
 
     def monthly_return(self):
         return self.closes[0] / self.closes[self.period] -1
