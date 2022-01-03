@@ -124,6 +124,6 @@ class SymbolData():
         return self.closes[0] / self.closes[5] -1
 
     def monthly_return(self):
-        return self.closes[0] / self.closes[self.period] -1
+        return self.closes[0] / self.closes[self.period-1] -1
 
 
