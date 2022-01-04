@@ -1,4 +1,4 @@
-class Team7Algo(QCAlgorithm):
+class Team7(QCAlgorithm):
 
     def Initialize(self):
         self.SetStartDate(2000, 1, 1)  
@@ -15,7 +15,6 @@ class Team7Algo(QCAlgorithm):
         self.long = []
         self.short = []
         
-        # Daily close data
         self.data = {}
         
         self.day = 1
@@ -52,53 +51,50 @@ class Team7Algo(QCAlgorithm):
                 self.data[symbol].update(close)
 
         return [x for x in selected if self.data[x].is_ready()]
-
-    def FineSelect(self, fine):
         
-        fine = [x for x in fine if x.MarketCap!=0]
-
+    def FineSelectionFunction(self, fine):
+        fine = [x for x in fine if x.MarketCap != 0]
+        
         sorted_by_market_cap = sorted(fine, key = lambda x:x.MarketCap, reverse = True)
-        topByMarketcap = [x.Symbol for x in sorted_by_market_cap [:self.top_by_market_cap_count]]
+        top_by_market_cap = [x.Symbol for x in sorted_by_market_cap[:self.top_by_market_cap_count]]
         
-        monthPerformance = {symbol:self.data[symbol].monthly_return() for symbol in topByMarketcap}
-        weekPerformance = {symbol:self.data[symbol].weekly_return() for symbol in topByMarketcap}
+        month_performances = {symbol : self.data[symbol].monthly_return() for symbol in top_by_market_cap}
+        week_performances = {symbol : self.data[symbol].weekly_return() for symbol in top_by_market_cap}
+            
+        sorted_by_month_perf = [x[0] for x in sorted(month_performances.items(), key=lambda item: item[1], reverse=True)]
+        sorted_by_week_perf = [x[0] for x in sorted(week_performances.items(), key=lambda item: item[1])]
         
-        sortedmonthPerformance = [x[0] for x in sorted(monthPerformance.items(), key= lambda item: item[1], reverse=True)]
-        sortedWeekPerformance = [x[0] for x in sorted(weekPerformance.items(), key= lambda item: item[1])]
+        self.long = sorted_by_week_perf[:self.stock_selection]
         
-        self.long = sortedWeekPerformance[:self.stock_selection]
-        
-        for symbol in sortedmonthPerformance:
+        for symbol in sorted_by_month_perf:
             if symbol not in self.long:
                 self.short.append(symbol)
-
-            if len(self.short)==10:
+            
+            if len(self.short) == 10:
                 break
-
+        
         return self.long + self.short
-
     
     def OnData(self, data):
         if not self.selection_flag:
             return
         self.selection_flag = False
-
+        
         invested = [x.Key for x in self.Portfolio if x.Value.Invested]
-
         for symbol in invested:
-            if symbol not in self.short + self.long:
+            if symbol not in self.long + self.short:
                 self.Liquidate(symbol)
         
-        for symbol in self.short:
-            if self.Securities[symbol].Price != 0 and self.Securities[symbol].IsTradeable:
-                self.setHoldings(symbol, -1/len(self.short))
-
         for symbol in self.long:
-            if self.Securities[symbol].Price != 0 and self.Securities[symbol].IsTradeable:
-                self.setHoldings(symbol, 1/len(self.long))
+            if self.Securities[symbol].Price != 0 and self.Securities[symbol].IsTradable:
+                self.SetHoldings(symbol, 1 / len(self.long))
 
-        self.short.clear()
+        for symbol in self.short:
+            if self.Securities[symbol].Price != 0 and self.Securities[symbol].IsTradable:
+                self.SetHoldings(symbol, -1 / len(self.short))
+                
         self.long.clear()
+        self.short.clear()
                 
     def Selection(self):
         if self.day == 5:
@@ -107,23 +103,20 @@ class Team7Algo(QCAlgorithm):
         self.day += 1
         if self.day > 5:
             self.day = 1
-    
             
 class SymbolData():
     def __init__(self, period):
         self.closes = RollingWindow[float](period)
         self.period = period
-    
+        
     def update(self, close):
         self.closes.Add(close)
-
-    def is_ready(self):
+        
+    def is_ready(self) -> bool:
         return self.closes.IsReady
+    
+    def weekly_return(self) -> float:
+        return self.closes[0] / self.closes[5] - 1
 
-    def weekly_return(self):
-        return self.closes[0] / self.closes[5] -1
-
-    def monthly_return(self):
-        return self.closes[0] / self.closes[self.period-1] -1
-
-
+    def monthly_return(self) -> float:
+        return self.closes[0] / self.closes[self.period-1] - 1
