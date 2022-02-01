@@ -1,7 +1,18 @@
+# The investment universe consists of the 100 biggest companies by market capitalization.
+# The investor goes long on the ten stocks with the lowest performance in the previous week and
+# goes short on the ten stocks with the greatest performance of the prior month. The portfolio is rebalanced weekly.
+import math 
+import pandas as pd
+from pypfopt.efficient_frontier import EfficientFrontier
+from pypfopt import risk_models
+from pypfopt import expected_returns
+
+
 class Team7(QCAlgorithm):
 
     def Initialize(self):
-        self.SetStartDate(2000, 1, 1)  
+        
+        self.SetStartDate(2000, 1, 1)
         self.SetCash(100000)
 
         self.symbol = self.AddEquity('SPY', Resolution.Daily).Symbol
@@ -15,6 +26,7 @@ class Team7(QCAlgorithm):
         self.long = []
         self.short = []
         
+        # Daily close data
         self.data = {}
         
         self.day = 1
@@ -22,11 +34,17 @@ class Team7(QCAlgorithm):
         self.UniverseSettings.Resolution = Resolution.Daily
         self.AddUniverse(self.CoarseSelectionFunction, self.FineSelectionFunction)
         self.Schedule.On(self.DateRules.EveryDay(self.symbol), self.TimeRules.AfterMarketOpen(self.symbol), self.Selection)
+
+    def OnSecuritiesChanged(self, changes):
+        for security in changes.AddedSecurities:
+            security.SetLeverage(5)
         
     def CoarseSelectionFunction(self, coarse):
+        # Update the rolling window every day.
         for stock in coarse:
             symbol = stock.Symbol
 
+            # Store monthly price.
             if symbol in self.data:
                 self.data[symbol].update(stock.AdjustedPrice)
 
@@ -37,6 +55,7 @@ class Team7(QCAlgorithm):
             key=lambda x: x.DollarVolume, reverse=True)
         selected = [x.Symbol for x in selected][:self.coarse_count]
 
+        # Warmup price rolling windows.
         for symbol in selected:
             if symbol in self.data:
                 continue
@@ -66,7 +85,7 @@ class Team7(QCAlgorithm):
         
         self.long = sorted_by_week_perf[:self.stock_selection]
         
-        for symbol in sorted_by_month_perf:
+        for symbol in sorted_by_month_perf: # Month performances are sorted descending
             if symbol not in self.long:
                 self.short.append(symbol)
             
@@ -82,17 +101,34 @@ class Team7(QCAlgorithm):
         
         invested = [x.Key for x in self.Portfolio if x.Value.Invested]
         for symbol in invested:
-            if symbol not in self.long + self.short:
-                self.Liquidate(symbol)
+            self.Liquidate(symbol)
         
-        for symbol in self.long:
-            if self.Securities[symbol].Price != 0 and self.Securities[symbol].IsTradable:
-                self.SetHoldings(symbol, 1 / len(self.long))
-
-        for symbol in self.short:
-            if self.Securities[symbol].Price != 0 and self.Securities[symbol].IsTradable:
-                self.SetHoldings(symbol, -1 / len(self.short))
-                
+        for short in self.short:
+            if self.Securities[short].Price != 0 and self.Securities[short].IsTradable:
+                self.SetHoldings(short, -1/len(self.short))
+        
+        # 100% long, 100% short, leveraged.
+        try:
+            df = self.History(self.long, 253, Resolution.Daily)['close']
+            df = df.reset_index().pivot(index='time', values='close', columns='symbol').reset_index()
+            df = df.rename(columns={'time':'Date'})
+            df = df.rename_axis(None, axis=1)
+            df = df.set_index('Date')
+            
+            mu = expected_returns.mean_historical_return(df)
+            S = risk_models.sample_cov(df)
+            ef = EfficientFrontier(mu, S)
+            weights = ef.max_sharpe()
+            
+            for stonk in weights:
+                if self.Securities[stonk].Price != 0 and self.Securities[stonk].IsTradable:
+                    self.SetHoldings(stonk, weights[stonk])
+        except:
+            for stonk in self.long:
+                if self.Securities[stonk].Price != 0 and self.Securities[stonk].IsTradable:
+                    self.SetHoldings(stonk, 1/len(self.long))
+        
+        
         self.long.clear()
         self.short.clear()
                 
@@ -120,3 +156,8 @@ class SymbolData():
 
     def monthly_return(self) -> float:
         return self.closes[0] / self.closes[self.period-1] - 1
+
+class CustomFeeModel(FeeModel):
+    def GetOrderFee(self, parameters):
+        fee = parameters.Security.Price * parameters.Order.AbsoluteQuantity * 0.00005
+        return OrderFee(CashAmount(fee, "USD"))
